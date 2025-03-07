@@ -1,16 +1,16 @@
 /**
- * PressureSensorLib - MicroBit 压力传感器库
- * 用于通过串口读取压力传感器数据
+ * PressureSensorLib - MicroBit 壓力感測器庫
+ * 用於通過串口讀取壓力感測器數據
  */
-//% color="#ff6800" weight=100 icon="\uf192" block="压力传感器"
+//% color="#ff6800" weight=100 icon="\uf192" block="壓力感測器"
 namespace PressureSensorLib {
-    // 常量定义
+    // 常量定義
     export const FRAME_HEADER = 0xAA;
-    export const BUFFER_SIZE = 40;  // 完整数据包的缓冲区大小
-    export const DEFAULT_SAMPLE_INTERVAL = 1000;  // 默认采样间隔（毫秒）
-    export const DEFAULT_BAUD_RATE = BaudRate.BaudRate115200;  // 默认波特率
+    export const BUFFER_SIZE = 40;  // 完整數據包的緩衝區大小
+    export const DEFAULT_SAMPLE_INTERVAL = 1000;  // 默認採樣間隔（毫秒）
+    export const DEFAULT_BAUD_RATE = BaudRate.BaudRate115200;  // 默認波特率
 
-    // 全局变量
+    // 全局變量
     let dataBuffer: number[] = [];
     let bufferIndex = 0;
     let frameStarted = false;
@@ -20,11 +20,11 @@ namespace PressureSensorLib {
     let isInitialized = false;
     let debugMode = false;
 
-    // 数据类型定义
+    // 數據類型定義
     export enum FootType {
-        //% block="左脚"
+        //% block="左腳"
         Left = 0x01,
-        //% block="右脚"
+        //% block="右腳"
         Right = 0x02,
         //% block="未知"
         Unknown = 0xFF
@@ -44,20 +44,20 @@ namespace PressureSensorLib {
         }
     }
 
-    // 事件处理
+    // 事件處理
     export const EVENT_DATA_RECEIVED = 1;
     export const EVENT_CHECKSUM_ERROR = 2;
 
-    // 初始化函数
+    // 初始化函數
     /**
-     * 初始化压力传感器库
-     * @param txPin 发送引脚
-     * @param rxPin 接收引脚
+     * 初始化壓力感測器庫
+     * @param txPin 發送引腳
+     * @param rxPin 接收引腳
      * @param baudRate 波特率
-     * @param interval 采样间隔（毫秒）
+     * @param interval 採樣間隔（毫秒）
      */
     //% blockId=pressuresensor_init
-    //% block="初始化压力传感器 TX %txPin RX %rxPin 波特率 %baudRate 采样间隔 %interval"
+    //% block="初始化壓力感測器 TX %txPin RX %rxPin 波特率 %baudRate 採樣間隔 %interval"
     //% txPin.defl=SerialPin.P1 rxPin.defl=SerialPin.P2
     //% baudRate.defl=BaudRate.BaudRate115200
     //% interval.defl=1000
@@ -74,21 +74,21 @@ namespace PressureSensorLib {
         serial.redirect(txPin, rxPin, baudRate);
         serial.setRxBufferSize(128);
         
-        // 设置采样间隔
+        // 設置採樣間隔
         sampleInterval = interval;
         
-        // 初始化缓冲区
+        // 初始化緩衝區
         dataBuffer = [];
         for (let i = 0; i < BUFFER_SIZE; i++) {
             dataBuffer.push(0);
         }
         
-        // 启动后台处理
+        // 啟動後台處理
         control.inBackground(processInBackground);
         
         if (debugMode) {
-            serial.writeLine("PressureSensor库已初始化");
-            serial.writeLine(`波特率: ${baudRate}, 采样间隔: ${interval}ms`);
+            serial.writeLine("PressureSensor庫已初始化");
+            serial.writeLine(`波特率: ${baudRate}, 採樣間隔: ${interval}ms`);
         }
         
         isInitialized = true;
@@ -96,57 +96,57 @@ namespace PressureSensorLib {
     }
 
     /**
-     * 设置是否启用调试输出
-     * @param debug 是否启用调试
+     * 設置是否啟用調試輸出
+     * @param debug 是否啟用調試
      */
     //% blockId=pressuresensor_set_debug
-    //% block="设置调试模式 %debug"
+    //% block="設置調試模式 %debug"
     //% debug.defl=false
     //% weight=90
     export function setDebugMode(debug: boolean): void {
         debugMode = debug;
         if (debug) {
-            serial.writeLine("调试模式已启用");
+            serial.writeLine("調試模式已啟用");
         }
     }
     
 
     /**
-     * 当收到压力数据时
+     * 當收到壓力數據時
      */
     //% blockId=pressuresensor_on_data
-    //% block="当收到压力数据"
+    //% block="當收到壓力數據"
     //% weight=95
     export function onDataReceived(handler: () => void) {
         control.onEvent(EVENT_DATA_RECEIVED, 0, handler);
     }
 
     /**
-     * 当校验和错误时
+     * 當校驗和錯誤時
      */
     //% blockId=pressuresensor_on_checksum_error
-    //% block="当校验和错误"
+    //% block="當校驗和錯誤"
     //% weight=85
     export function onChecksumError(handler: () => void) {
         control.onEvent(EVENT_CHECKSUM_ERROR, 0, handler);
     }
 
     /**
-     * 测试连接和数据接收
+     * 測試連接和數據接收
      */
     //% blockId=pressuresensor_test
-    //% block="测试传感器连接"
+    //% block="測試感測器連接"
     //% weight=55
     export function testConnection(): void {
         if (!isInitialized) {
-            serial.writeLine("请先初始化传感器!");
+            serial.writeLine("請先初始化感測器!");
             return;
         }
         
-        serial.writeLine("开始测试传感器连接...");
-        serial.writeLine("等待数据...");
+        serial.writeLine("開始測試感測器連接...");
+        serial.writeLine("等待數據...");
         
-        // 显示等待动画
+        // 顯示等待動畫
         basic.showLeds(`
             . . . . .
             . . . . .
@@ -171,10 +171,10 @@ namespace PressureSensorLib {
             . . # . .
         `);
         
-        // 请求数据
+        // 請求數據
         requestData();
         
-        // 等待5秒看是否有数据接收
+        // 等待5秒看是否有數據接收
         let startTime = control.millis();
         let received = false;
         
@@ -187,10 +187,10 @@ namespace PressureSensorLib {
         }
         
         if (received) {
-            serial.writeLine("测试成功: 接收到数据!");
+            serial.writeLine("測試成功: 接收到數據!");
             basic.showIcon(IconNames.Yes);
         } else {
-            serial.writeLine("测试失败: 未接收到数据");
+            serial.writeLine("測試失敗: 未接收到數據");
             basic.showIcon(IconNames.No);
         }
         
@@ -199,10 +199,10 @@ namespace PressureSensorLib {
 
 
     /**
-     * 获取最新的压力数据
+     * 獲取最新的壓力數據
      */
     //% blockId=pressuresensor_get_data
-    //% block="获取压力数据"
+    //% block="獲取壓力數據"
     //% weight=80
     export function getData(): PressureData {
         const data = new PressureData();
@@ -213,12 +213,12 @@ namespace PressureSensorLib {
                         dataBuffer[1] == 0x02 ? FootType.Right : 
                         FootType.Unknown;
         
-        // 复制原始数据
+        // 複製原始數據
         for (let i = 0; i < 39; i++) {
             data.rawData.push(dataBuffer[i]);
         }
         
-        // 解析点数据
+        // 解析點數據
         for (let i = 0; i < 18; i++) {
             let highByte = dataBuffer[2 + i * 2];
             let lowByte = dataBuffer[3 + i * 2];
@@ -231,11 +231,11 @@ namespace PressureSensorLib {
     }
 
     /**
-     * 获取指定点的压力值
-     * @param pointIndex 点索引 (1-18)
+     * 獲取指定點的壓力值
+     * @param pointIndex 點索引 (1-18)
      */
     //% blockId=pressuresensor_get_point
-    //% block="获取点 %pointIndex 的压力值"
+    //% block="獲取點 %pointIndex 的壓力值"
     //% pointIndex.min=1 pointIndex.max=18
     //% weight=75
     export function getPointValue(pointIndex: number): number {
@@ -248,10 +248,10 @@ namespace PressureSensorLib {
     }
 
     /**
-     * 获取脚类型 (左/右)
+     * 獲取腳類型 (左/右)
      */
     //% blockId=pressuresensor_get_foot_type
-    //% block="获取脚类型"
+    //% block="獲取腳類型"
     //% weight=70
     export function getFootType(): FootType {
         if (dataBuffer.length < 39) return FootType.Unknown;
@@ -262,36 +262,36 @@ namespace PressureSensorLib {
     }
 
     /**
-     * 是否为左脚数据
+     * 是否為左腳數據
      */
     //% blockId=pressuresensor_is_left_foot
-    //% block="是左脚数据"
+    //% block="是左腳數據"
     //% weight=65
     export function isLeftFoot(): boolean {
         return getFootType() === FootType.Left;
     }
 
     /**
-     * 是否为右脚数据
+     * 是否為右腳數據
      */
     //% blockId=pressuresensor_is_right_foot
-    //% block="是右脚数据"
+    //% block="是右腳數據"
     //% weight=64
     export function isRightFoot(): boolean {
         return getFootType() === FootType.Right;
     }
 
     /**
-     * 手动请求新数据
+     * 手動請求新數據
      */
     //% blockId=pressuresensor_request_data
-    //% block="请求新数据"
+    //% block="請求新數據"
     //% weight=60
     export function requestData(): void {
         if (debugMode) {
-            serial.writeLine("请求新数据...");
+            serial.writeLine("請求新數據...");
         }
-        // 如果需要发送请求命令，可以在这里添加
+        // 如果需要發送請求命令，可以在這裡添加
         // serial.writeBuffer(pins.createBuffer(1).fill(requestCommand))
     }
 
@@ -302,16 +302,16 @@ namespace PressureSensorLib {
                 continue;
             }
     
-            // 主循环逻辑
+            // 主循環邏輯
             let currentTime = control.millis();
     
-            // 定时采样
+            // 定時採樣
             if (currentTime - lastSampleTime >= sampleInterval) {
                 lastSampleTime = currentTime;
                 requestData();
             }
     
-            // 检查新数据 - 修改这部分以匹配原始代码的处理方式
+            // 檢查新數據 - 修改這部分以匹配原始代碼的處理方式
             receivedBuffer = serial.readBuffer(39);
     
             if (receivedBuffer.length > 0) {
@@ -321,25 +321,25 @@ namespace PressureSensorLib {
                     serial.writeLine("//");
                 }
                 
-                // 重置帧状态，确保每次新的读取都从头开始解析
+                // 重置幀狀態，確保每次新的讀取都從頭開始解析
                 frameStarted = false;
                 
                 for (let i = 0; i < receivedBuffer.length && i < BUFFER_SIZE; i++) {
                     let incomingByte = receivedBuffer[i];
                     
-                    // 检测帧头
+                    // 檢測幀頭
                     if (incomingByte == FRAME_HEADER && !frameStarted) {
                         frameStarted = true;
                         bufferIndex = 0;
                         dataBuffer[bufferIndex++] = incomingByte;
                     }
-                    // 如果找到帧头，继续收集数据
+                    // 如果找到幀頭，繼續收集數據
                     else if (frameStarted) {
                         dataBuffer[bufferIndex++] = incomingByte;
     
-                        // 如果收集了足够的数据 (39字节，根据协议)
+                        // 如果收集了足夠的數據 (39字節，根據協議)
                         if (bufferIndex >= 39) {
-                            // 验证校验和
+                            // 驗證校驗和
                             if (validateChecksum()) {
                                 control.raiseEvent(EVENT_DATA_RECEIVED, 0);
                                 if (debugMode) {
@@ -348,11 +348,11 @@ namespace PressureSensorLib {
                             } else {
                                 control.raiseEvent(EVENT_CHECKSUM_ERROR, 0);
                                 if (debugMode) {
-                                    serial.writeLine("校验和错误!");
+                                    serial.writeLine("校驗和錯誤!");
                                 }
                             }
     
-                            // 重置状态，准备下一帧
+                            // 重置狀態，準備下一幀
                             frameStarted = false;
                             bufferIndex = 0;
                         }
@@ -360,7 +360,7 @@ namespace PressureSensorLib {
                 }
             }
     
-            // 小延迟以防止CPU过度占用
+            // 小延遲以防止CPU過度佔用
             basic.pause(10);
         }
     }
@@ -368,7 +368,7 @@ namespace PressureSensorLib {
 
     function validateChecksum(): boolean {
         let sum = 0;
-        // 计算前38个字节的和
+        // 計算前38個字節的和
         for (let i = 0; i < 38; i++) {
             sum += dataBuffer[i];
             if (debugMode) {
@@ -384,20 +384,20 @@ namespace PressureSensorLib {
         // 取低8位
         let calculatedChecksum = sum & 0xFF;
     
-        // 比较计算的校验和与接收的校验和
+        // 比較計算的校驗和與接收的校驗和
         return (calculatedChecksum == dataBuffer[38]);
     }
     
 
-    // 打印调试信息
+    // 打印調試信息
     function printDebugInfo(): void {
-        let packageType = dataBuffer[1]; // 01-左脚, 02-右脚
+        let packageType = dataBuffer[1]; // 01-左腳, 02-右腳
 
-        serial.writeLine("接收到数据包: " +
-            (packageType == 0x01 ? "左脚" : "右脚"));
+        serial.writeLine("接收到數據包: " +
+            (packageType == 0x01 ? "左腳" : "右腳"));
 
-        // 打印原始数据（十六进制）
-        let rawDataStr = "原始数据: ";
+        // 打印原始數據（十六進制）
+        let rawDataStr = "原始數據: ";
         for (let i = 0; i < 39; i++) {
             if (dataBuffer[i] < 0x10) {
                 rawDataStr += "0";
@@ -406,22 +406,22 @@ namespace PressureSensorLib {
         }
         serial.writeLine(rawDataStr);
 
-        // 解析点数据
-        serial.writeLine("解析的点数据:");
+        // 解析點數據
+        serial.writeLine("解析的點數據:");
 
-        // 18个点
+        // 18個點
         for (let i = 0; i < 18; i++) {
             let highByte = dataBuffer[2 + i * 2];
             let lowByte = dataBuffer[3 + i * 2];
             let value = highByte * 256 + lowByte;
 
-            serial.writeLine("点" + (i + 1) + ": " +
+            serial.writeLine("點" + (i + 1) + ": " +
                 highByte + "*256+" +
                 lowByte + "=" +
                 value);
         }
 
-        serial.writeLine("时间戳: " + control.millis() + " ms");
+        serial.writeLine("時間戳: " + control.millis() + " ms");
         serial.writeLine("------------------------------");
     }
 }
