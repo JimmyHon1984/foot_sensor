@@ -105,7 +105,11 @@ namespace PressureSensorLib {
     //% weight=90
     export function setDebugMode(debug: boolean): void {
         debugMode = debug;
+        if (debug) {
+            serial.writeLine("调试模式已启用");
+        }
     }
+    
 
     /**
      * 当收到压力数据时
@@ -126,6 +130,73 @@ namespace PressureSensorLib {
     export function onChecksumError(handler: () => void) {
         control.onEvent(EVENT_CHECKSUM_ERROR, 0, handler);
     }
+
+    /**
+     * 测试连接和数据接收
+     */
+    //% blockId=pressuresensor_test
+    //% block="测试传感器连接"
+    //% weight=55
+    export function testConnection(): void {
+        if (!isInitialized) {
+            serial.writeLine("请先初始化传感器!");
+            return;
+        }
+        
+        serial.writeLine("开始测试传感器连接...");
+        serial.writeLine("等待数据...");
+        
+        // 显示等待动画
+        basic.showLeds(`
+            . . . . .
+            . . . . .
+            . . # . .
+            . . . . .
+            . . . . .
+        `);
+        basic.pause(200);
+        basic.showLeds(`
+            . . . . .
+            . . # . .
+            . # . # .
+            . . # . .
+            . . . . .
+        `);
+        basic.pause(200);
+        basic.showLeds(`
+            . . # . .
+            . # . # .
+            # . . . #
+            . # . # .
+            . . # . .
+        `);
+        
+        // 请求数据
+        requestData();
+        
+        // 等待5秒看是否有数据接收
+        let startTime = control.millis();
+        let received = false;
+        
+        while (control.millis() - startTime < 5000) {
+            if (receivedBuffer.length > 0) {
+                received = true;
+                break;
+            }
+            basic.pause(100);
+        }
+        
+        if (received) {
+            serial.writeLine("测试成功: 接收到数据!");
+            basic.showIcon(IconNames.Yes);
+        } else {
+            serial.writeLine("测试失败: 未接收到数据");
+            basic.showIcon(IconNames.No);
+        }
+        
+        basic.pause(1000);
+    }
+
 
     /**
      * 获取最新的压力数据
@@ -224,27 +295,35 @@ namespace PressureSensorLib {
         // serial.writeBuffer(pins.createBuffer(1).fill(requestCommand))
     }
 
-    // 内部函数 - 后台处理
     function processInBackground(): void {
         while (true) {
             if (!isInitialized) {
                 basic.pause(100);
                 continue;
             }
-
+    
             // 主循环逻辑
             let currentTime = control.millis();
-
+    
             // 定时采样
             if (currentTime - lastSampleTime >= sampleInterval) {
                 lastSampleTime = currentTime;
                 requestData();
             }
-
-            // 检查新数据
+    
+            // 检查新数据 - 修改这部分以匹配原始代码的处理方式
             receivedBuffer = serial.readBuffer(39);
-
+    
             if (receivedBuffer.length > 0) {
+                if (debugMode) {
+                    serial.writeLine("readBuffer");
+                    serial.writeNumber(receivedBuffer.length);
+                    serial.writeLine("//");
+                }
+                
+                // 重置帧状态，确保每次新的读取都从头开始解析
+                frameStarted = false;
+                
                 for (let i = 0; i < receivedBuffer.length && i < BUFFER_SIZE; i++) {
                     let incomingByte = receivedBuffer[i];
                     
@@ -257,8 +336,8 @@ namespace PressureSensorLib {
                     // 如果找到帧头，继续收集数据
                     else if (frameStarted) {
                         dataBuffer[bufferIndex++] = incomingByte;
-
-                        // 如果收集了足够的数据
+    
+                        // 如果收集了足够的数据 (39字节，根据协议)
                         if (bufferIndex >= 39) {
                             // 验证校验和
                             if (validateChecksum()) {
@@ -272,35 +351,43 @@ namespace PressureSensorLib {
                                     serial.writeLine("校验和错误!");
                                 }
                             }
-
+    
                             // 重置状态，准备下一帧
                             frameStarted = false;
                             bufferIndex = 0;
                         }
                     }
                 }
-                frameStarted = false;
             }
-
+    
             // 小延迟以防止CPU过度占用
             basic.pause(10);
         }
     }
+    
 
-    // 验证校验和
     function validateChecksum(): boolean {
         let sum = 0;
         // 计算前38个字节的和
         for (let i = 0; i < 38; i++) {
             sum += dataBuffer[i];
+            if (debugMode) {
+                serial.writeNumber(dataBuffer[i]);
+                serial.writeLine("");
+            }
+        }
+        
+        if (debugMode) {
+            serial.writeNumber(sum);
         }
         
         // 取低8位
         let calculatedChecksum = sum & 0xFF;
-
+    
         // 比较计算的校验和与接收的校验和
         return (calculatedChecksum == dataBuffer[38]);
     }
+    
 
     // 打印调试信息
     function printDebugInfo(): void {
