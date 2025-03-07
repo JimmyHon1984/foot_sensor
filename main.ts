@@ -207,7 +207,8 @@ namespace PressureSensorLib {
     export function getData(): PressureData {
         const data = new PressureData();
         
-        if (dataBuffer.length < 39) return data;
+        // 確保 dataBuffer 已初始化且有足夠長度
+        if (!dataBuffer || dataBuffer.length < 39) return data;
         
         data.footType = dataBuffer[1] == 0x01 ? FootType.Left : 
                         dataBuffer[1] == 0x02 ? FootType.Right : 
