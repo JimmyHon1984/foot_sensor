@@ -403,7 +403,7 @@ namespace PressureSensorLib {
             if (dataBuffer[i] < 0x10) {
                 rawDataStr += "0";
             }
-            rawDataStr += dataBuffer[i].toString(16) + " ";
+            rawDataStr += dataBuffer[i].toString() + " ";
         }
         serial.writeLine(rawDataStr);
 
