@@ -1,5 +1,5 @@
 {
-    "name": "pressuresensorlib",
+    "name": "PressureSensorLib",
     "version": "1.1.0",
     "description": "MicroBit 压力传感器库，用于读取和处理压力传感器数据",
     "license": "MIT",
