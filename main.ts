@@ -56,6 +56,8 @@ namespace PressureSensorLib {
     export const EVENT_DATA_RECEIVED = 1;
     export const EVENT_CHECKSUM_ERROR = 2;
 
+    // ==================== FREQUENTLY USED FUNCTIONS ====================
+    
     // Initialization function
     /**
      * Initialize pressure sensor library
@@ -107,21 +109,6 @@ namespace PressureSensorLib {
         isInitialized = true;
         basic.showIcon(IconNames.Yes);
     }
-
-    /**
-     * Set debug mode
-     * @param debug Enable debug mode
-     */
-    //% blockId=pressure_sensor_set_debug
-    //% block="Set debug mode %debug"
-    //% debug.defl=false
-    //% weight=90
-    export function setDebugMode(debug: boolean): void {
-        debugMode = debug;
-        if (debug) {
-            serial.writeLine("Debug mode enabled");
-        }
-    }
     
     /**
      * When pressure data is received
@@ -134,11 +121,207 @@ namespace PressureSensorLib {
     }
 
     /**
+     * Get pressure value for a specific point (1-18)
+     * @param pointIndex Point index (1-18)
+     */
+    //% blockId=pressure_sensor_get_point
+    //% block="Get pressure value for point %pointIndex"
+    //% pointIndex.min=1 pointIndex.max=18
+    //% weight=90
+    export function getPointValue(pointIndex: number): number {
+        if (pointIndex < 1 || pointIndex > 18) return 0;
+        return pointValues[pointIndex - 1];
+    }
+
+    /**
+     * Get all pressure points as a formatted string for display
+     * @param group Select which group of points to display
+     */
+    //% blockId=pressure_sensor_get_all_points
+    //% block="Show all pressure points %group"
+    //% group.defl=PointGroup.All
+    //% weight=85
+    export function getAllPoints(group: PointGroup = PointGroup.All): string {
+        const range = getPointRange(group);
+        let result = "Points: \n";
+        
+        for (let i = range.start; i <= range.end; i += range.step) {
+            result += "P" + (i + 1) + ": " + pointValues[i];
+            if (i < range.end) {
+                // Add a new line every 3 points for better readability
+                if ((i - range.start + 1) % 3 === 0) {
+                    result += "\n";
+                } else {
+                    result += " | ";
+                }
+            }
+        }
+        
+        return result;
+    }
+
+    /**
+     * Get the sum of all pressure points
+     * @param group Select which group of points to sum
+     */
+    //% blockId=pressure_sensor_get_points_sum
+    //% block="Sum of pressure points %group"
+    //% group.defl=PointGroup.All
+    //% weight=80
+    export function getPointsSum(group: PointGroup = PointGroup.All): number {
+        const range = getPointRange(group);
+        let sum = 0;
+        
+        for (let i = range.start; i <= range.end; i += range.step) {
+            sum += pointValues[i];
+        }
+        
+        return sum;
+    }
+
+    /**
+     * Get the average of all pressure points
+     * @param group Select which group of points to average
+     */
+    //% blockId=pressure_sensor_get_points_average
+    //% block="Average of pressure points %group"
+    //% group.defl=PointGroup.All
+    //% weight=75
+    export function getPointsAverage(group: PointGroup = PointGroup.All): number {
+        const range = getPointRange(group);
+        let sum = 0;
+        let count = 0;
+        
+        for (let i = range.start; i <= range.end; i += range.step) {
+            sum += pointValues[i];
+            count++;
+        }
+        
+        return count > 0 ? Math.round(sum / count) : 0;
+    }
+
+    /**
+     * Get the maximum pressure point value
+     * @param group Select which group of points to check
+     */
+    //% blockId=pressure_sensor_get_points_max
+    //% block="Maximum pressure in %group"
+    //% group.defl=PointGroup.All
+    //% weight=70
+    export function getPointsMax(group: PointGroup = PointGroup.All): number {
+        const range = getPointRange(group);
+        let max = 0;
+        
+        for (let i = range.start; i <= range.end; i += range.step) {
+            if (pointValues[i] > max) {
+                max = pointValues[i];
+            }
+        }
+        
+        return max;
+    }
+
+    /**
+     * Check if data is for left foot
+     */
+    //% blockId=pressure_sensor_is_left_foot
+    //% block="Is left foot data"
+    //% weight=65
+    export function isLeftFoot(): boolean {
+        return currentFootType === FootType.Left;
+    }
+
+    /**
+     * Check if data is for right foot
+     */
+    //% blockId=pressure_sensor_is_right_foot
+    //% block="Is right foot data"
+    //% weight=64
+    export function isRightFoot(): boolean {
+        return currentFootType === FootType.Right;
+    }
+
+    /**
+     * Check if data has been updated since last check
+     */
+    //% blockId=pressure_sensor_is_data_updated
+    //% block="Is data updated"
+    //% weight=60
+    export function isDataUpdated(): boolean {
+        if (dataUpdated) {
+            dataUpdated = false;  // Reset flag after checking
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Manually request new data
+     */
+    //% blockId=pressure_sensor_request_data
+    //% block="Request new data"
+    //% weight=55
+    export function requestData(): void {
+        if (debugMode) {
+            serial.writeLine("Requesting new data...");
+        }
+        // If you need to send request command, add it here
+        // serial.writeBuffer(pins.createBuffer(1).fill(requestCommand))
+    }
+
+    // ==================== LESS FREQUENTLY USED FUNCTIONS ====================
+
+    /**
+     * Get foot type (Left/Right)
+     */
+    //% blockId=pressure_sensor_get_foot_type
+    //% block="Get foot type"
+    //% weight=50
+    export function getFootType(): FootType {
+        return currentFootType;
+    }
+
+    /**
+     * Get current foot type as number (1=Left, 2=Right, 255=Unknown)
+     */
+    //% blockId=pressure_sensor_get_foot_type_number
+    //% block="Get foot type as number"
+    //% weight=45
+    export function getFootTypeNumber(): number {
+        return currentFootType;
+    }
+
+    /**
+     * Get current timestamp
+     */
+    //% blockId=pressure_sensor_get_timestamp
+    //% block="Get timestamp"
+    //% weight=40
+    export function getTimestamp(): number {
+        return currentTimestamp;
+    }
+
+    /**
+     * Set debug mode
+     * @param debug Enable debug mode
+     */
+    //% blockId=pressure_sensor_set_debug
+    //% block="Set debug mode %debug"
+    //% debug.defl=false
+    //% weight=35
+    export function setDebugMode(debug: boolean): void {
+        debugMode = debug;
+        if (debug) {
+            serial.writeLine("Debug mode enabled");
+        }
+    }
+    
+    /**
      * When checksum error occurs
      */
     //% blockId=pressure_sensor_on_checksum_error
     //% block="On checksum error"
-    //% weight=85
+    //% weight=30
     export function onChecksumError(handler: () => void) {
         control.onEvent(EVENT_CHECKSUM_ERROR, 0, handler);
     }
@@ -148,7 +331,7 @@ namespace PressureSensorLib {
      */
     //% blockId=pressure_sensor_test
     //% block="Test sensor connection"
-    //% weight=55
+    //% weight=25
     export function testConnection(): void {
         if (!isInitialized) {
             serial.writeLine("Please initialize the sensor first!");
@@ -210,6 +393,35 @@ namespace PressureSensorLib {
     }
 
     /**
+     * Get all pressure points as an array (for advanced users)
+     */
+    //% blockId=pressure_sensor_get_points_array
+    //% block="Get all pressure points array"
+    //% advanced=true
+    //% weight=20
+    export function getPointsArray(): number[] {
+        return pointValues;
+    }
+
+    // ==================== DIRECT POINT ACCESS FUNCTIONS ====================
+    // Combined into a single function with a parameter
+
+    /**
+     * Get direct access to pressure point (1-18)
+     * @param point Point number (1-18)
+     */
+    //% blockId=pressure_sensor_point
+    //% block="Pressure point %point"
+    //% point.min=1 point.max=18
+    //% weight=15
+    export function getPoint(point: number): number {
+        if (point < 1 || point > 18) return 0;
+        return pointValues[point - 1];
+    }
+
+    // ==================== HELPER FUNCTIONS ====================
+
+    /**
      * Helper function to get point range based on group
      */
     function getPointRange(group: PointGroup): { start: number, end: number, step: number } {
@@ -245,375 +457,7 @@ namespace PressureSensorLib {
         return { start, end, step };
     }
 
-    /**
-     * Get all pressure points as a formatted string for display
-     * @param group Select which group of points to display
-     */
-    //% blockId=pressure_sensor_get_all_points
-    //% block="Show all pressure points %group"
-    //% group.defl=PointGroup.All
-    //% weight=79
-    export function getAllPoints(group: PointGroup = PointGroup.All): string {
-        const range = getPointRange(group);
-        let result = "Points: \n";
-        
-        for (let i = range.start; i <= range.end; i += range.step) {
-            result += "P" + (i + 1) + ": " + pointValues[i];
-            if (i < range.end) {
-                // Add a new line every 3 points for better readability
-                if ((i - range.start + 1) % 3 === 0) {
-                    result += "\n";
-                } else {
-                    result += " | ";
-                }
-            }
-        }
-        
-        return result;
-    }
-
-    /**
-     * Get the sum of all pressure points
-     * @param group Select which group of points to sum
-     */
-    //% blockId=pressure_sensor_get_points_sum
-    //% block="Sum of pressure points %group"
-    //% group.defl=PointGroup.All
-    //% weight=78
-    export function getPointsSum(group: PointGroup = PointGroup.All): number {
-        const range = getPointRange(group);
-        let sum = 0;
-        
-        for (let i = range.start; i <= range.end; i += range.step) {
-            sum += pointValues[i];
-        }
-        
-        return sum;
-    }
-
-    /**
-     * Get the average of all pressure points
-     * @param group Select which group of points to average
-     */
-    //% blockId=pressure_sensor_get_points_average
-    //% block="Average of pressure points %group"
-    //% group.defl=PointGroup.All
-    //% weight=77
-    export function getPointsAverage(group: PointGroup = PointGroup.All): number {
-        const range = getPointRange(group);
-        let sum = 0;
-        let count = 0;
-        
-        for (let i = range.start; i <= range.end; i += range.step) {
-            sum += pointValues[i];
-            count++;
-        }
-        
-        return count > 0 ? Math.round(sum / count) : 0;
-    }
-
-    /**
-     * Get the maximum pressure point value
-     * @param group Select which group of points to check
-     */
-    //% blockId=pressure_sensor_get_points_max
-    //% block="Maximum pressure in %group"
-    //% group.defl=PointGroup.All
-    //% weight=76
-    export function getPointsMax(group: PointGroup = PointGroup.All): number {
-        const range = getPointRange(group);
-        let max = 0;
-        
-        for (let i = range.start; i <= range.end; i += range.step) {
-            if (pointValues[i] > max) {
-                max = pointValues[i];
-            }
-        }
-        
-        return max;
-    }
-
-    /**
-     * Get current foot type as number (1=Left, 2=Right, 255=Unknown)
-     */
-    //% blockId=pressure_sensor_get_foot_type_number
-    //% block="Get foot type as number"
-    //% weight=72
-    export function getFootTypeNumber(): number {
-        return currentFootType;
-    }
-
-    /**
-     * Get pressure value for a specific point
-     * @param pointIndex Point index (1-18)
-     */
-    //% blockId=pressure_sensor_get_point
-    //% block="Get pressure value for point %pointIndex"
-    //% pointIndex.min=1 pointIndex.max=18
-    //% weight=75
-    export function getPointValue(pointIndex: number): number {
-        if (pointIndex < 1 || pointIndex > 18) return 0;
-        return pointValues[pointIndex - 1];
-    }
-
-    /**
-     * Get foot type (Left/Right)
-     */
-    //% blockId=pressure_sensor_get_foot_type
-    //% block="Get foot type"
-    //% weight=70
-    export function getFootType(): FootType {
-        return currentFootType;
-    }
-
-    /**
-     * Check if data is for left foot
-     */
-    //% blockId=pressure_sensor_is_left_foot
-    //% block="Is left foot data"
-    //% weight=65
-    export function isLeftFoot(): boolean {
-        return currentFootType === FootType.Left;
-    }
-
-    /**
-     * Check if data is for right foot
-     */
-    //% blockId=pressure_sensor_is_right_foot
-    //% block="Is right foot data"
-    //% weight=64
-    export function isRightFoot(): boolean {
-        return currentFootType === FootType.Right;
-    }
-
-    /**
-     * Get current timestamp
-     */
-    //% blockId=pressure_sensor_get_timestamp
-    //% block="Get timestamp"
-    //% weight=63
-    export function getTimestamp(): number {
-        return currentTimestamp;
-    }
-
-    /**
-     * Check if data has been updated since last check
-     */
-    //% blockId=pressure_sensor_is_data_updated
-    //% block="Is data updated"
-    //% weight=62
-    export function isDataUpdated(): boolean {
-        if (dataUpdated) {
-            dataUpdated = false;  // Reset flag after checking
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Get direct access to point value 1
-     */
-    //% blockId=pressure_sensor_point_1
-    //% block="Pressure point 1"
-    //% weight=59
-    export function point1(): number {
-        return pointValues[0];
-    }
-
-    /**
-     * Get direct access to point value 2
-     */
-    //% blockId=pressure_sensor_point_2
-    //% block="Pressure point 2"
-    //% weight=58
-    export function point2(): number {
-        return pointValues[1];
-    }
-
-    /**
-     * Get direct access to point value 3
-     */
-    //% blockId=pressure_sensor_point_3
-    //% block="Pressure point 3"
-    //% weight=57
-    export function point3(): number {
-        return pointValues[2];
-    }
-
-    /**
-     * Get direct access to point value 4
-     */
-    //% blockId=pressure_sensor_point_4
-    //% block="Pressure point 4"
-    //% weight=56
-    export function point4(): number {
-        return pointValues[3];
-    }
-
-    /**
-     * Get direct access to point value 5
-     */
-    //% blockId=pressure_sensor_point_5
-    //% block="Pressure point 5"
-    //% weight=55
-    export function point5(): number {
-        return pointValues[4];
-    }
-
-    /**
-     * Get direct access to point value 6
-     */
-    //% blockId=pressure_sensor_point_6
-    //% block="Pressure point 6"
-    //% weight=54
-    export function point6(): number {
-        return pointValues[5];
-    }
-
-    /**
-     * Get direct access to point value 7
-     */
-    //% blockId=pressure_sensor_point_7
-    //% block="Pressure point 7"
-    //% weight=53
-    export function point7(): number {
-        return pointValues[6];
-    }
-
-    /**
-     * Get direct access to point value 8
-     */
-    //% blockId=pressure_sensor_point_8
-    //% block="Pressure point 8"
-    //% weight=52
-    export function point8(): number {
-        return pointValues[7];
-    }
-
-    /**
-     * Get direct access to point value 9
-     */
-    //% blockId=pressure_sensor_point_9
-    //% block="Pressure point 9"
-    //% weight=51
-    export function point9(): number {
-        return pointValues[8];
-    }
-
-    /**
-     * Get direct access to point value 10
-     */
-    //% blockId=pressure_sensor_point_10
-    //% block="Pressure point 10"
-    //% weight=50
-    export function point10(): number {
-        return pointValues[9];
-    }
-
-    /**
-     * Get direct access to point value 11
-     */
-    //% blockId=pressure_sensor_point_11
-    //% block="Pressure point 11"
-    //% weight=49
-    export function point11(): number {
-        return pointValues[10];
-    }
-
-    /**
-     * Get direct access to point value 12
-     */
-    //% blockId=pressure_sensor_point_12
-    //% block="Pressure point 12"
-    //% weight=48
-    export function point12(): number {
-        return pointValues[11];
-    }
-
-    /**
-     * Get direct access to point value 13
-     */
-    //% blockId=pressure_sensor_point_13
-    //% block="Pressure point 13"
-    //% weight=47
-    export function point13(): number {
-        return pointValues[12];
-    }
-
-    /**
-     * Get direct access to point value 14
-     */
-    //% blockId=pressure_sensor_point_14
-    //% block="Pressure point 14"
-    //% weight=46
-    export function point14(): number {
-        return pointValues[13];
-    }
-
-    /**
-     * Get direct access to point value 15
-     */
-    //% blockId=pressure_sensor_point_15
-    //% block="Pressure point 15"
-    //% weight=45
-    export function point15(): number {
-        return pointValues[14];
-    }
-
-    /**
-     * Get direct access to point value 16
-     */
-    //% blockId=pressure_sensor_point_16
-    //% block="Pressure point 16"
-    //% weight=44
-    export function point16(): number {
-        return pointValues[15];
-    }
-
-    /**
-     * Get direct access to point value 17
-     */
-    //% blockId=pressure_sensor_point_17
-    //% block="Pressure point 17"
-    //% weight=43
-    export function point17(): number {
-        return pointValues[16];
-    }
-
-    /**
-     * Get direct access to point value 18
-     */
-    //% blockId=pressure_sensor_point_18
-    //% block="Pressure point 18"
-    //% weight=42
-    export function point18(): number {
-        return pointValues[17];
-    }
-
-    /**
-     * Get all pressure points as an array (for advanced users)
-     */
-    //% blockId=pressure_sensor_get_points_array
-    //% block="Get all pressure points array"
-    //% advanced=true
-    //% weight=40
-    export function getPointsArray(): number[] {
-        return pointValues;
-    }
-
-    /**
-     * Manually request new data
-     */
-    //% blockId=pressure_sensor_request_data
-    //% block="Request new data"
-    //% weight=41
-    export function requestData(): void {
-        if (debugMode) {
-            serial.writeLine("Requesting new data...");
-        }
-        // If you need to send request command, add it here
-        // serial.writeBuffer(pins.createBuffer(1).fill(requestCommand))
-    }
+    // ==================== BACKGROUND PROCESSING FUNCTIONS ====================
 
     function processInBackground(): void {
         while (true) {
@@ -729,7 +573,6 @@ namespace PressureSensorLib {
         return (calculatedChecksum == dataBuffer[38]);
     }
     
-
     // Print debug information
     function printDebugInfo(): void {
         let packageType = dataBuffer[1]; // 01-left foot, 02-right foot
