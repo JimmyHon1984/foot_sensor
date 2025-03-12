@@ -90,7 +90,7 @@ namespace PressureSensorLib {
      * @param baudRate Baud rate
      * @param interval Sampling interval (milliseconds)
      */
-    //% blockId=pressuresensor_init
+    //% blockId=pressure_sensor_init
     //% block="Initialize pressure sensor TX %txPin RX %rxPin baud rate %baudRate sampling interval %interval"
     //% txPin.defl=SerialPin.P1 rxPin.defl=SerialPin.P2
     //% baudRate.defl=BaudRate.BaudRate115200
@@ -138,7 +138,7 @@ namespace PressureSensorLib {
      * Set debug mode
      * @param debug Enable debug mode
      */
-    //% blockId=pressuresensor_set_debug
+    //% blockId=pressure_sensor_set_debug
     //% block="Set debug mode %debug"
     //% debug.defl=false
     //% weight=90
@@ -152,7 +152,7 @@ namespace PressureSensorLib {
     /**
      * When pressure data is received
      */
-    //% blockId=pressuresensor_on_data
+    //% blockId=pressure_sensor_on_data
     //% block="On pressure data received"
     //% weight=95
     export function onDataReceived(handler: () => void) {
@@ -162,7 +162,7 @@ namespace PressureSensorLib {
     /**
      * When checksum error occurs
      */
-    //% blockId=pressuresensor_on_checksum_error
+    //% blockId=pressure_sensor_on_checksum_error
     //% block="On checksum error"
     //% weight=85
     export function onChecksumError(handler: () => void) {
@@ -172,7 +172,7 @@ namespace PressureSensorLib {
     /**
      * Test connection and data reception
      */
-    //% blockId=pressuresensor_test
+    //% blockId=pressure_sensor_test
     //% block="Test sensor connection"
     //% weight=55
     export function testConnection(): void {
@@ -239,7 +239,7 @@ namespace PressureSensorLib {
      * Get the latest pressure data with options to select which data to include
      * @param options Select which data to include in the result
      */
-    //% blockId=pressuresensor_get_data
+    //% blockId=pressure_sensor_get_data
     //% block="Get pressure data %options"
     //% options.defl=DataOptions.All
     //% weight=80
@@ -279,7 +279,7 @@ namespace PressureSensorLib {
     /**
      * Get current foot type as number (1=Left, 2=Right, 255=Unknown)
      */
-    //% blockId=pressuresensor_get_foot_type_number
+    //% blockId=pressure_sensor_get_foot_type_number
     //% block="Get foot type as number"
     //% weight=72
     export function getFootTypeNumber(): number {
@@ -290,7 +290,7 @@ namespace PressureSensorLib {
      * Get pressure value for a specific point
      * @param pointIndex Point index (1-18)
      */
-    //% blockId=pressuresensor_get_point
+    //% blockId=pressure_sensor_get_point
     //% block="Get pressure value for point %pointIndex"
     //% pointIndex.min=1 pointIndex.max=18
     //% weight=75
@@ -302,7 +302,7 @@ namespace PressureSensorLib {
     /**
      * Get foot type (Left/Right)
      */
-    //% blockId=pressuresensor_get_foot_type
+    //% blockId=pressure_sensor_get_foot_type
     //% block="Get foot type"
     //% weight=70
     export function getFootType(): FootType {
@@ -312,7 +312,7 @@ namespace PressureSensorLib {
     /**
      * Check if data is for left foot
      */
-    //% blockId=pressuresensor_is_left_foot
+    //% blockId=pressure_sensor_is_left_foot
     //% block="Is left foot data"
     //% weight=65
     export function isLeftFoot(): boolean {
@@ -322,7 +322,7 @@ namespace PressureSensorLib {
     /**
      * Check if data is for right foot
      */
-    //% blockId=pressuresensor_is_right_foot
+    //% blockId=pressure_sensor_is_right_foot
     //% block="Is right foot data"
     //% weight=64
     export function isRightFoot(): boolean {
@@ -332,7 +332,7 @@ namespace PressureSensorLib {
     /**
      * Get current timestamp
      */
-    //% blockId=pressuresensor_get_timestamp
+    //% blockId=pressure_sensor_get_timestamp
     //% block="Get timestamp"
     //% weight=63
     export function getTimestamp(): number {
@@ -342,7 +342,7 @@ namespace PressureSensorLib {
     /**
      * Check if data has been updated since last check
      */
-    //% blockId=pressuresensor_is_data_updated
+    //% blockId=pressure_sensor_is_data_updated
     //% block="Is data updated"
     //% weight=62
     export function isDataUpdated(): boolean {
@@ -356,7 +356,7 @@ namespace PressureSensorLib {
     /**
      * Manually request new data
      */
-    //% blockId=pressuresensor_request_data
+    //% blockId=pressure_sensor_request_data
     //% block="Request new data"
     //% weight=60
     export function requestData(): void {
