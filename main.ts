@@ -10,7 +10,6 @@ namespace PressureSensorLib {
     export const DEFAULT_SAMPLE_INTERVAL = 1000;  // Default sampling interval (milliseconds)
     export const DEFAULT_BAUD_RATE = BaudRate.BaudRate115200;  // Default baud rate
     
-
     // Global variables
     let dataBuffer: number[] = [];
     let bufferIndex = 0;
@@ -20,6 +19,12 @@ namespace PressureSensorLib {
     let sampleInterval = DEFAULT_SAMPLE_INTERVAL;
     let isInitialized = false;
     let debugMode = false;
+
+    // Exposed data variables that can be accessed directly
+    export let currentFootType = 0;  // 1=Left, 2=Right, 255=Unknown
+    export let currentTimestamp = 0;
+    export let pointValues: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    export let dataUpdated = false;  // Flag to indicate new data is available
 
     // Data type definitions
     export enum FootType {
@@ -112,6 +117,11 @@ namespace PressureSensorLib {
             dataBuffer.push(0);
         }
         
+        // Initialize point values
+        for (let i = 0; i < 18; i++) {
+            pointValues[i] = 0;
+        }
+        
         // Start background processing
         control.inBackground(processInBackground);
         
@@ -139,7 +149,6 @@ namespace PressureSensorLib {
         }
     }
     
-
     /**
      * When pressure data is received
      */
@@ -226,7 +235,6 @@ namespace PressureSensorLib {
         basic.pause(1000);
     }
 
-
     /**
      * Get the latest pressure data with options to select which data to include
      * @param options Select which data to include in the result
@@ -236,49 +244,6 @@ namespace PressureSensorLib {
     //% options.defl=DataOptions.All
     //% weight=80
     export function getData(options: DataOptions = DataOptions.All): string {
-        // Create a data object to collect the information
-        const data = new PressureData();
-        
-        // Ensure dataBuffer is initialized and has sufficient length
-        if (!dataBuffer || dataBuffer.length < 39) {
-            return "{}"; // Return empty object if no data
-        }
-        
-        // Get foot type if needed
-        if (options === DataOptions.All || 
-            options === DataOptions.FootTypeOnly || 
-            options === DataOptions.FootTypeAndPoints || 
-            options === DataOptions.FootTypeAndTimestamp) {
-            
-            data.footType = dataBuffer[1] == 0x01 ? FootType.Left : 
-                            dataBuffer[1] == 0x02 ? FootType.Right : 
-                            FootType.Unknown;
-        }
-        
-        // Get pressure points if needed
-        if (options === DataOptions.All || 
-            options === DataOptions.PointsOnly || 
-            options === DataOptions.FootTypeAndPoints || 
-            options === DataOptions.PointsAndTimestamp) {
-            
-            // Parse point data
-            for (let i = 0; i < 18; i++) {
-                let highByte = dataBuffer[2 + i * 2];
-                let lowByte = dataBuffer[3 + i * 2];
-                let value = highByte * 256 + lowByte;
-                data.points.push(value);
-            }
-        }
-        
-        // Get timestamp if needed
-        if (options === DataOptions.All || 
-            options === DataOptions.TimestampOnly || 
-            options === DataOptions.FootTypeAndTimestamp || 
-            options === DataOptions.PointsAndTimestamp) {
-            
-            data.timestamp = control.millis();
-        }
-        
         // Create the result object based on selected options
         let result: any = {};
         
@@ -287,8 +252,8 @@ namespace PressureSensorLib {
             options === DataOptions.FootTypeAndPoints || 
             options === DataOptions.FootTypeAndTimestamp) {
             
-            result.footType = data.footType === FootType.Left ? "Left" : 
-                              data.footType === FootType.Right ? "Right" : "Unknown";
+            result.footType = currentFootType === FootType.Left ? "Left" : 
+                              currentFootType === FootType.Right ? "Right" : "Unknown";
         }
         
         if (options === DataOptions.All || 
@@ -296,7 +261,7 @@ namespace PressureSensorLib {
             options === DataOptions.FootTypeAndPoints || 
             options === DataOptions.PointsAndTimestamp) {
             
-            result.points = data.points;
+            result.points = pointValues;
         }
         
         if (options === DataOptions.All || 
@@ -304,11 +269,21 @@ namespace PressureSensorLib {
             options === DataOptions.FootTypeAndTimestamp || 
             options === DataOptions.PointsAndTimestamp) {
             
-            result.timestamp = data.timestamp;
+            result.timestamp = currentTimestamp;
         }
         
         // Convert to string and return
         return JSON.stringify(result);
+    }
+
+    /**
+     * Get current foot type as number (1=Left, 2=Right, 255=Unknown)
+     */
+    //% blockId=pressuresensor_get_foot_type_number
+    //% block="Get foot type as number"
+    //% weight=72
+    export function getFootTypeNumber(): number {
+        return currentFootType;
     }
 
     /**
@@ -320,12 +295,8 @@ namespace PressureSensorLib {
     //% pointIndex.min=1 pointIndex.max=18
     //% weight=75
     export function getPointValue(pointIndex: number): number {
-        if (pointIndex < 1 || pointIndex > 18 || dataBuffer.length < 39) return 0;
-        
-        const i = pointIndex - 1;
-        const highByte = dataBuffer[2 + i * 2];
-        const lowByte = dataBuffer[3 + i * 2];
-        return highByte * 256 + lowByte;
+        if (pointIndex < 1 || pointIndex > 18) return 0;
+        return pointValues[pointIndex - 1];
     }
 
     /**
@@ -335,11 +306,7 @@ namespace PressureSensorLib {
     //% block="Get foot type"
     //% weight=70
     export function getFootType(): FootType {
-        if (dataBuffer.length < 39) return FootType.Unknown;
-        
-        return dataBuffer[1] == 0x01 ? FootType.Left : 
-               dataBuffer[1] == 0x02 ? FootType.Right : 
-               FootType.Unknown;
+        return currentFootType;
     }
 
     /**
@@ -349,7 +316,7 @@ namespace PressureSensorLib {
     //% block="Is left foot data"
     //% weight=65
     export function isLeftFoot(): boolean {
-        return getFootType() === FootType.Left;
+        return currentFootType === FootType.Left;
     }
 
     /**
@@ -359,7 +326,31 @@ namespace PressureSensorLib {
     //% block="Is right foot data"
     //% weight=64
     export function isRightFoot(): boolean {
-        return getFootType() === FootType.Right;
+        return currentFootType === FootType.Right;
+    }
+
+    /**
+     * Get current timestamp
+     */
+    //% blockId=pressuresensor_get_timestamp
+    //% block="Get timestamp"
+    //% weight=63
+    export function getTimestamp(): number {
+        return currentTimestamp;
+    }
+
+    /**
+     * Check if data has been updated since last check
+     */
+    //% blockId=pressuresensor_is_data_updated
+    //% block="Is data updated"
+    //% weight=62
+    export function isDataUpdated(): boolean {
+        if (dataUpdated) {
+            dataUpdated = false;  // Reset flag after checking
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -422,6 +413,9 @@ namespace PressureSensorLib {
                         if (bufferIndex >= 39) {
                             // Validate checksum
                             if (validateChecksum()) {
+                                // Update the global variables when valid data is received
+                                updateGlobalVariables();
+                                
                                 control.raiseEvent(EVENT_DATA_RECEIVED, 0);
                                 if (debugMode) {
                                     printDebugInfo();
@@ -446,6 +440,24 @@ namespace PressureSensorLib {
         }
     }
     
+    // Update global variables with the latest data
+    function updateGlobalVariables(): void {
+        // Update foot type
+        currentFootType = dataBuffer[1];
+        
+        // Update timestamp
+        currentTimestamp = control.millis();
+        
+        // Update point values
+        for (let i = 0; i < 18; i++) {
+            let highByte = dataBuffer[2 + i * 2];
+            let lowByte = dataBuffer[3 + i * 2];
+            pointValues[i] = highByte * 256 + lowByte;
+        }
+        
+        // Set the updated flag
+        dataUpdated = true;
+    }
 
     function validateChecksum(): boolean {
         let sum = 0;
@@ -502,7 +514,7 @@ namespace PressureSensorLib {
                 value);
         }
 
-        serial.writeLine("Timestamp: " + control.millis() + " ms");
+        serial.writeLine("Timestamp: " + currentTimestamp + " ms");
         serial.writeLine("------------------------------");
     }
 }
