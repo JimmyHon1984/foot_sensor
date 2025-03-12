@@ -36,46 +36,20 @@ namespace PressureSensorLib {
         Unknown = 0xFF
     }
 
-    // Data options for getData function
-    export enum DataOptions {
-        //% block="All Data"
+    // Point selection for getAllPoints function
+    export enum PointGroup {
+        //% block="All Points"
         All = 0,
-        //% block="Foot Type Only"
-        FootTypeOnly = 1,
-        //% block="Pressure Points Only"
-        PointsOnly = 2,
-        //% block="Timestamp Only"
-        TimestampOnly = 3,
-        //% block="Foot Type and Points"
-        FootTypeAndPoints = 4,
-        //% block="Foot Type and Timestamp"
-        FootTypeAndTimestamp = 5,
-        //% block="Points and Timestamp"
-        PointsAndTimestamp = 6
-    }
-
-    export class PressureData {
-        footType: FootType;
-        points: number[];
-        timestamp: number;
-        rawData: number[];
-
-        constructor() {
-            this.footType = FootType.Unknown;
-            this.points = [];
-            this.timestamp = 0;
-            this.rawData = [];
-        }
-        
-        // Add toString method to display data properly
-        toString(): string {
-            return JSON.stringify({
-                footType: this.footType === FootType.Left ? "Left" : 
-                          this.footType === FootType.Right ? "Right" : "Unknown",
-                points: this.points,
-                timestamp: this.timestamp
-            });
-        }
+        //% block="Front Points (1-6)"
+        Front = 1,
+        //% block="Middle Points (7-12)"
+        Middle = 2,
+        //% block="Heel Points (13-18)"
+        Heel = 3,
+        //% block="Left Side Points (odd numbers)"
+        LeftSide = 4,
+        //% block="Right Side Points (even numbers)"
+        RightSide = 5
     }
 
     // Event handling
@@ -236,44 +210,127 @@ namespace PressureSensorLib {
     }
 
     /**
-     * Get the latest pressure data with options to select which data to include
-     * @param options Select which data to include in the result
+     * Helper function to get point range based on group
      */
-    //% blockId=pressure_sensor_get_data
-    //% block="Get pressure data %options"
-    //% options.defl=DataOptions.All
-    //% weight=80
-    export function getData(options: DataOptions = DataOptions.All): string {
-        // Create the result object based on selected options
-        let result: any = {};
+    function getPointRange(group: PointGroup): { start: number, end: number, step: number } {
+        let start = 0;
+        let end = 17;
+        let step = 1;
         
-        if (options === DataOptions.All || 
-            options === DataOptions.FootTypeOnly || 
-            options === DataOptions.FootTypeAndPoints || 
-            options === DataOptions.FootTypeAndTimestamp) {
-            
-            result.footType = currentFootType === FootType.Left ? "Left" : 
-                              currentFootType === FootType.Right ? "Right" : "Unknown";
+        switch (group) {
+            case PointGroup.Front:
+                start = 0;
+                end = 5;
+                break;
+            case PointGroup.Middle:
+                start = 6;
+                end = 11;
+                break;
+            case PointGroup.Heel:
+                start = 12;
+                end = 17;
+                break;
+            case PointGroup.LeftSide:
+                start = 0;
+                end = 17;
+                step = 2;
+                break;
+            case PointGroup.RightSide:
+                start = 1;
+                end = 17;
+                step = 2;
+                break;
         }
         
-        if (options === DataOptions.All || 
-            options === DataOptions.PointsOnly || 
-            options === DataOptions.FootTypeAndPoints || 
-            options === DataOptions.PointsAndTimestamp) {
-            
-            result.points = pointValues;
+        return { start, end, step };
+    }
+
+    /**
+     * Get all pressure points as a formatted string for display
+     * @param group Select which group of points to display
+     */
+    //% blockId=pressure_sensor_get_all_points
+    //% block="Show all pressure points %group"
+    //% group.defl=PointGroup.All
+    //% weight=79
+    export function getAllPoints(group: PointGroup = PointGroup.All): string {
+        const range = getPointRange(group);
+        let result = "Points: \n";
+        
+        for (let i = range.start; i <= range.end; i += range.step) {
+            result += "P" + (i + 1) + ": " + pointValues[i];
+            if (i < range.end) {
+                // Add a new line every 3 points for better readability
+                if ((i - range.start + 1) % 3 === 0) {
+                    result += "\n";
+                } else {
+                    result += " | ";
+                }
+            }
         }
         
-        if (options === DataOptions.All || 
-            options === DataOptions.TimestampOnly || 
-            options === DataOptions.FootTypeAndTimestamp || 
-            options === DataOptions.PointsAndTimestamp) {
-            
-            result.timestamp = currentTimestamp;
+        return result;
+    }
+
+    /**
+     * Get the sum of all pressure points
+     * @param group Select which group of points to sum
+     */
+    //% blockId=pressure_sensor_get_points_sum
+    //% block="Sum of pressure points %group"
+    //% group.defl=PointGroup.All
+    //% weight=78
+    export function getPointsSum(group: PointGroup = PointGroup.All): number {
+        const range = getPointRange(group);
+        let sum = 0;
+        
+        for (let i = range.start; i <= range.end; i += range.step) {
+            sum += pointValues[i];
         }
         
-        // Convert to string and return
-        return JSON.stringify(result);
+        return sum;
+    }
+
+    /**
+     * Get the average of all pressure points
+     * @param group Select which group of points to average
+     */
+    //% blockId=pressure_sensor_get_points_average
+    //% block="Average of pressure points %group"
+    //% group.defl=PointGroup.All
+    //% weight=77
+    export function getPointsAverage(group: PointGroup = PointGroup.All): number {
+        const range = getPointRange(group);
+        let sum = 0;
+        let count = 0;
+        
+        for (let i = range.start; i <= range.end; i += range.step) {
+            sum += pointValues[i];
+            count++;
+        }
+        
+        return count > 0 ? Math.round(sum / count) : 0;
+    }
+
+    /**
+     * Get the maximum pressure point value
+     * @param group Select which group of points to check
+     */
+    //% blockId=pressure_sensor_get_points_max
+    //% block="Maximum pressure in %group"
+    //% group.defl=PointGroup.All
+    //% weight=76
+    export function getPointsMax(group: PointGroup = PointGroup.All): number {
+        const range = getPointRange(group);
+        let max = 0;
+        
+        for (let i = range.start; i <= range.end; i += range.step) {
+            if (pointValues[i] > max) {
+                max = pointValues[i];
+            }
+        }
+        
+        return max;
     }
 
     /**
@@ -531,6 +588,17 @@ namespace PressureSensorLib {
     //% weight=42
     export function point18(): number {
         return pointValues[17];
+    }
+
+    /**
+     * Get all pressure points as an array (for advanced users)
+     */
+    //% blockId=pressure_sensor_get_points_array
+    //% block="Get all pressure points array"
+    //% advanced=true
+    //% weight=40
+    export function getPointsArray(): number[] {
+        return pointValues;
     }
 
     /**
