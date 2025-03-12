@@ -31,6 +31,24 @@ namespace PressureSensorLib {
         Unknown = 0xFF
     }
 
+    // Data options for getData function
+    export enum DataOptions {
+        //% block="All Data"
+        All = 0,
+        //% block="Foot Type Only"
+        FootTypeOnly = 1,
+        //% block="Pressure Points Only"
+        PointsOnly = 2,
+        //% block="Timestamp Only"
+        TimestampOnly = 3,
+        //% block="Foot Type and Points"
+        FootTypeAndPoints = 4,
+        //% block="Foot Type and Timestamp"
+        FootTypeAndTimestamp = 5,
+        //% block="Points and Timestamp"
+        PointsAndTimestamp = 6
+    }
+
     export class PressureData {
         footType: FootType;
         points: number[];
@@ -210,36 +228,87 @@ namespace PressureSensorLib {
 
 
     /**
-     * Get the latest pressure data
+     * Get the latest pressure data with options to select which data to include
+     * @param options Select which data to include in the result
      */
     //% blockId=pressuresensor_get_data
-    //% block="Get pressure data"
+    //% block="Get pressure data %options"
+    //% options.defl=DataOptions.All
     //% weight=80
-    export function getData(): PressureData {
+    export function getData(options: DataOptions = DataOptions.All): string {
+        // Create a data object to collect the information
         const data = new PressureData();
         
         // Ensure dataBuffer is initialized and has sufficient length
-        if (!dataBuffer || dataBuffer.length < 39) return data;
-        
-        data.footType = dataBuffer[1] == 0x01 ? FootType.Left : 
-                        dataBuffer[1] == 0x02 ? FootType.Right : 
-                        FootType.Unknown;
-        
-        // Copy raw data
-        for (let i = 0; i < 39; i++) {
-            data.rawData.push(dataBuffer[i]);
+        if (!dataBuffer || dataBuffer.length < 39) {
+            return "{}"; // Return empty object if no data
         }
         
-        // Parse point data
-        for (let i = 0; i < 18; i++) {
-            let highByte = dataBuffer[2 + i * 2];
-            let lowByte = dataBuffer[3 + i * 2];
-            let value = highByte * 256 + lowByte;
-            data.points.push(value);
+        // Get foot type if needed
+        if (options === DataOptions.All || 
+            options === DataOptions.FootTypeOnly || 
+            options === DataOptions.FootTypeAndPoints || 
+            options === DataOptions.FootTypeAndTimestamp) {
+            
+            data.footType = dataBuffer[1] == 0x01 ? FootType.Left : 
+                            dataBuffer[1] == 0x02 ? FootType.Right : 
+                            FootType.Unknown;
         }
         
-        data.timestamp = control.millis();
-        return data;
+        // Get pressure points if needed
+        if (options === DataOptions.All || 
+            options === DataOptions.PointsOnly || 
+            options === DataOptions.FootTypeAndPoints || 
+            options === DataOptions.PointsAndTimestamp) {
+            
+            // Parse point data
+            for (let i = 0; i < 18; i++) {
+                let highByte = dataBuffer[2 + i * 2];
+                let lowByte = dataBuffer[3 + i * 2];
+                let value = highByte * 256 + lowByte;
+                data.points.push(value);
+            }
+        }
+        
+        // Get timestamp if needed
+        if (options === DataOptions.All || 
+            options === DataOptions.TimestampOnly || 
+            options === DataOptions.FootTypeAndTimestamp || 
+            options === DataOptions.PointsAndTimestamp) {
+            
+            data.timestamp = control.millis();
+        }
+        
+        // Create the result object based on selected options
+        let result: any = {};
+        
+        if (options === DataOptions.All || 
+            options === DataOptions.FootTypeOnly || 
+            options === DataOptions.FootTypeAndPoints || 
+            options === DataOptions.FootTypeAndTimestamp) {
+            
+            result.footType = data.footType === FootType.Left ? "Left" : 
+                              data.footType === FootType.Right ? "Right" : "Unknown";
+        }
+        
+        if (options === DataOptions.All || 
+            options === DataOptions.PointsOnly || 
+            options === DataOptions.FootTypeAndPoints || 
+            options === DataOptions.PointsAndTimestamp) {
+            
+            result.points = data.points;
+        }
+        
+        if (options === DataOptions.All || 
+            options === DataOptions.TimestampOnly || 
+            options === DataOptions.FootTypeAndTimestamp || 
+            options === DataOptions.PointsAndTimestamp) {
+            
+            result.timestamp = data.timestamp;
+        }
+        
+        // Convert to string and return
+        return JSON.stringify(result);
     }
 
     /**
