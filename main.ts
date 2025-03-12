@@ -392,33 +392,6 @@ namespace PressureSensorLib {
         basic.pause(1000);
     }
 
-    /**
-     * Get all pressure points as an array (for advanced users)
-     */
-    //% blockId=pressure_sensor_get_points_array
-    //% block="Get all pressure points array"
-    //% advanced=true
-    //% weight=20
-    export function getPointsArray(): number[] {
-        return pointValues;
-    }
-
-    // ==================== DIRECT POINT ACCESS FUNCTIONS ====================
-    // Combined into a single function with a parameter
-
-    /**
-     * Get direct access to pressure point (1-18)
-     * @param point Point number (1-18)
-     */
-    //% blockId=pressure_sensor_point
-    //% block="Pressure point %point"
-    //% point.min=1 point.max=18
-    //% weight=15
-    export function getPoint(point: number): number {
-        if (point < 1 || point > 18) return 0;
-        return pointValues[point - 1];
-    }
-
     // ==================== HELPER FUNCTIONS ====================
 
     /**
