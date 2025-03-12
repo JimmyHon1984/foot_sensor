@@ -354,11 +354,191 @@ namespace PressureSensorLib {
     }
 
     /**
+     * Get direct access to point value 1
+     */
+    //% blockId=pressure_sensor_point_1
+    //% block="Pressure point 1"
+    //% weight=59
+    export function point1(): number {
+        return pointValues[0];
+    }
+
+    /**
+     * Get direct access to point value 2
+     */
+    //% blockId=pressure_sensor_point_2
+    //% block="Pressure point 2"
+    //% weight=58
+    export function point2(): number {
+        return pointValues[1];
+    }
+
+    /**
+     * Get direct access to point value 3
+     */
+    //% blockId=pressure_sensor_point_3
+    //% block="Pressure point 3"
+    //% weight=57
+    export function point3(): number {
+        return pointValues[2];
+    }
+
+    /**
+     * Get direct access to point value 4
+     */
+    //% blockId=pressure_sensor_point_4
+    //% block="Pressure point 4"
+    //% weight=56
+    export function point4(): number {
+        return pointValues[3];
+    }
+
+    /**
+     * Get direct access to point value 5
+     */
+    //% blockId=pressure_sensor_point_5
+    //% block="Pressure point 5"
+    //% weight=55
+    export function point5(): number {
+        return pointValues[4];
+    }
+
+    /**
+     * Get direct access to point value 6
+     */
+    //% blockId=pressure_sensor_point_6
+    //% block="Pressure point 6"
+    //% weight=54
+    export function point6(): number {
+        return pointValues[5];
+    }
+
+    /**
+     * Get direct access to point value 7
+     */
+    //% blockId=pressure_sensor_point_7
+    //% block="Pressure point 7"
+    //% weight=53
+    export function point7(): number {
+        return pointValues[6];
+    }
+
+    /**
+     * Get direct access to point value 8
+     */
+    //% blockId=pressure_sensor_point_8
+    //% block="Pressure point 8"
+    //% weight=52
+    export function point8(): number {
+        return pointValues[7];
+    }
+
+    /**
+     * Get direct access to point value 9
+     */
+    //% blockId=pressure_sensor_point_9
+    //% block="Pressure point 9"
+    //% weight=51
+    export function point9(): number {
+        return pointValues[8];
+    }
+
+    /**
+     * Get direct access to point value 10
+     */
+    //% blockId=pressure_sensor_point_10
+    //% block="Pressure point 10"
+    //% weight=50
+    export function point10(): number {
+        return pointValues[9];
+    }
+
+    /**
+     * Get direct access to point value 11
+     */
+    //% blockId=pressure_sensor_point_11
+    //% block="Pressure point 11"
+    //% weight=49
+    export function point11(): number {
+        return pointValues[10];
+    }
+
+    /**
+     * Get direct access to point value 12
+     */
+    //% blockId=pressure_sensor_point_12
+    //% block="Pressure point 12"
+    //% weight=48
+    export function point12(): number {
+        return pointValues[11];
+    }
+
+    /**
+     * Get direct access to point value 13
+     */
+    //% blockId=pressure_sensor_point_13
+    //% block="Pressure point 13"
+    //% weight=47
+    export function point13(): number {
+        return pointValues[12];
+    }
+
+    /**
+     * Get direct access to point value 14
+     */
+    //% blockId=pressure_sensor_point_14
+    //% block="Pressure point 14"
+    //% weight=46
+    export function point14(): number {
+        return pointValues[13];
+    }
+
+    /**
+     * Get direct access to point value 15
+     */
+    //% blockId=pressure_sensor_point_15
+    //% block="Pressure point 15"
+    //% weight=45
+    export function point15(): number {
+        return pointValues[14];
+    }
+
+    /**
+     * Get direct access to point value 16
+     */
+    //% blockId=pressure_sensor_point_16
+    //% block="Pressure point 16"
+    //% weight=44
+    export function point16(): number {
+        return pointValues[15];
+    }
+
+    /**
+     * Get direct access to point value 17
+     */
+    //% blockId=pressure_sensor_point_17
+    //% block="Pressure point 17"
+    //% weight=43
+    export function point17(): number {
+        return pointValues[16];
+    }
+
+    /**
+     * Get direct access to point value 18
+     */
+    //% blockId=pressure_sensor_point_18
+    //% block="Pressure point 18"
+    //% weight=42
+    export function point18(): number {
+        return pointValues[17];
+    }
+
+    /**
      * Manually request new data
      */
     //% blockId=pressure_sensor_request_data
     //% block="Request new data"
-    //% weight=60
+    //% weight=41
     export function requestData(): void {
         if (debugMode) {
             serial.writeLine("Requesting new data...");
