@@ -26,6 +26,13 @@ namespace PressureSensorLib {
     export let pointValues: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     export let dataUpdated = false;  // Flag to indicate new data is available
 
+    // Foot region definitions (using 0-based index internally)
+    export const TOE_REGION = [0, 6, 12, 16];       // Points 1, 7, 13, 17
+    export const FOREFOOT_REGION = [5, 11, 15];     // Points 6, 12, 16
+    export const MIDFOOT_REGION = [4, 10, 14];      // Points 5, 11, 15
+    export const ARCH_REGION = [3, 9];              // Points 4, 10
+    export const HEEL_REGION = [1, 2, 7, 8];        // Points 2, 3, 8, 9
+
     // Data type definitions
     export enum FootType {
         //% block="Left Foot"
@@ -115,7 +122,7 @@ namespace PressureSensorLib {
      */
     //% blockId=pressure_sensor_on_data
     //% block="On pressure data received"
-    //% weight=95
+    //% weight=98
     export function onDataReceived(handler: () => void) {
         control.onEvent(EVENT_DATA_RECEIVED, 0, handler);
     }
@@ -127,10 +134,145 @@ namespace PressureSensorLib {
     //% blockId=pressure_sensor_get_point
     //% block="Get pressure value for point %pointIndex"
     //% pointIndex.min=1 pointIndex.max=18
-    //% weight=90
+    //% weight=96
     export function getPointValue(pointIndex: number): number {
         if (pointIndex < 1 || pointIndex > 18) return 0;
         return pointValues[pointIndex - 1];
+    }
+
+    /**
+     * Calculate the Center of Pressure (CoP) for the current foot
+     * Returns [x, y] coordinates where:
+     * - x ranges from 0 (left) to 1 (right)
+     * - y ranges from 0 (heel) to 1 (toe)
+     */
+    //% blockId=pressure_sensor_get_cop
+    //% block="Get Center of Pressure coordinates"
+    //% weight=95
+    export function getCenterOfPressure(): number[] {
+        // Define the coordinates for each pressure point (normalized from 0 to 1)
+        // These are approximate positions based on the foot shape image
+        const pointCoordinates = [
+            // Point 1: [x, y]
+            [0.2, 0.8],  // Point 1
+            [0.1, 0.9],  // Point 2
+            [0.1, 0.3],  // Point 3
+            [0.1, 0.2],  // Point 4
+            [0.1, 0.5],  // Point 5
+            [0.1, 0.7],  // Point 6
+            [0.3, 0.8],  // Point 7
+            [0.3, 0.9],  // Point 8
+            [0.3, 0.3],  // Point 9
+            [0.3, 0.2],  // Point 10
+            [0.3, 0.5],  // Point 11
+            [0.3, 0.7],  // Point 12
+            [0.5, 0.8],  // Point 13
+            [0.5, 0.9],  // Point 14
+            [0.5, 0.5],  // Point 15
+            [0.5, 0.7],  // Point 16
+            [0.7, 0.8],  // Point 17
+            [0.7, 0.9],  // Point 18
+        ];
+
+        // Mirror the x-coordinates if this is a right foot
+        if (currentFootType === FootType.Right) {
+            for (let i = 0; i < pointCoordinates.length; i++) {
+                pointCoordinates[i][0] = 1 - pointCoordinates[i][0];
+            }
+        }
+
+        let totalPressure = 0;
+        let weightedSumX = 0;
+        let weightedSumY = 0;
+
+        // Calculate weighted average of coordinates based on pressure values
+        for (let i = 0; i < 18; i++) {
+            const pressure = pointValues[i];
+            totalPressure += pressure;
+            weightedSumX += pressure * pointCoordinates[i][0];
+            weightedSumY += pressure * pointCoordinates[i][1];
+        }
+
+        // Avoid division by zero
+        if (totalPressure === 0) {
+            return [0.5, 0.5]; // Return center if no pressure detected
+        }
+
+        // Calculate center of pressure
+        const copX = weightedSumX / totalPressure;
+        const copY = weightedSumY / totalPressure;
+
+        return [copX, copY];
+    }
+
+    /**
+     * Get the CoP coordinates as a formatted string
+     */
+    //% blockId=pressure_sensor_get_cop_string
+    //% block="Get Center of Pressure as string"
+    //% weight=94
+    export function getCenterOfPressureString(): string {
+        const cop = getCenterOfPressure();
+        // Format to 2 decimal places
+        return `CoP: (${Math.round(cop[0] * 100) / 100}, ${Math.round(cop[1] * 100) / 100})`;
+    }
+
+    /**
+     * Check if data has been updated since last check
+     */
+    //% blockId=pressure_sensor_is_data_updated
+    //% block="Is data updated"
+    //% weight=93
+    export function isDataUpdated(): boolean {
+        if (dataUpdated) {
+            dataUpdated = false;  // Reset flag after checking
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * Check if data is for left foot
+     */
+    //% blockId=pressure_sensor_is_left_foot
+    //% block="Is left foot data"
+    //% weight=92
+    export function isLeftFoot(): boolean {
+        return currentFootType === FootType.Left;
+    }
+
+    /**
+     * Check if data is for right foot
+     */
+    //% blockId=pressure_sensor_is_right_foot
+    //% block="Is right foot data"
+    //% weight=91
+    export function isRightFoot(): boolean {
+        return currentFootType === FootType.Right;
+    }
+
+    /**
+     * Get current foot type as number (1=Left, 2=Right, 255=Unknown)
+     */
+    //% blockId=pressure_sensor_get_foot_type_number
+    //% block="Get foot type as number"
+    //% weight=90
+    export function getFootTypeNumber(): number {
+        return currentFootType;
+    }
+
+    /**
+     * Manually request new data
+     */
+    //% blockId=pressure_sensor_request_data
+    //% block="Request new data"
+    //% weight=89
+    export function requestData(): void {
+        if (debugMode) {
+            serial.writeLine("Requesting new data...");
+        }
+        // If you need to send request command, add it here
+        // serial.writeBuffer(pins.createBuffer(1).fill(requestCommand))
     }
 
     /**
@@ -160,6 +302,8 @@ namespace PressureSensorLib {
         return result;
     }
 
+    // ==================== LESS FREQUENTLY USED FUNCTIONS ====================
+
     /**
      * Get the sum of all pressure points
      * @param group Select which group of points to sum
@@ -167,7 +311,7 @@ namespace PressureSensorLib {
     //% blockId=pressure_sensor_get_points_sum
     //% block="Sum of pressure points %group"
     //% group.defl=PointGroup.All
-    //% weight=80
+    //% weight=60
     export function getPointsSum(group: PointGroup = PointGroup.All): number {
         const range = getPointRange(group);
         let sum = 0;
@@ -186,7 +330,7 @@ namespace PressureSensorLib {
     //% blockId=pressure_sensor_get_points_average
     //% block="Average of pressure points %group"
     //% group.defl=PointGroup.All
-    //% weight=75
+    //% weight=59
     export function getPointsAverage(group: PointGroup = PointGroup.All): number {
         const range = getPointRange(group);
         let sum = 0;
@@ -207,7 +351,7 @@ namespace PressureSensorLib {
     //% blockId=pressure_sensor_get_points_max
     //% block="Maximum pressure in %group"
     //% group.defl=PointGroup.All
-    //% weight=70
+    //% weight=58
     export function getPointsMax(group: PointGroup = PointGroup.All): number {
         const range = getPointRange(group);
         let max = 0;
@@ -222,56 +366,6 @@ namespace PressureSensorLib {
     }
 
     /**
-     * Check if data is for left foot
-     */
-    //% blockId=pressure_sensor_is_left_foot
-    //% block="Is left foot data"
-    //% weight=65
-    export function isLeftFoot(): boolean {
-        return currentFootType === FootType.Left;
-    }
-
-    /**
-     * Check if data is for right foot
-     */
-    //% blockId=pressure_sensor_is_right_foot
-    //% block="Is right foot data"
-    //% weight=64
-    export function isRightFoot(): boolean {
-        return currentFootType === FootType.Right;
-    }
-
-    /**
-     * Check if data has been updated since last check
-     */
-    //% blockId=pressure_sensor_is_data_updated
-    //% block="Is data updated"
-    //% weight=60
-    export function isDataUpdated(): boolean {
-        if (dataUpdated) {
-            dataUpdated = false;  // Reset flag after checking
-            return true;
-        }
-        return false;
-    }
-
-    /**
-     * Manually request new data
-     */
-    //% blockId=pressure_sensor_request_data
-    //% block="Request new data"
-    //% weight=55
-    export function requestData(): void {
-        if (debugMode) {
-            serial.writeLine("Requesting new data...");
-        }
-        // If you need to send request command, add it here
-        // serial.writeBuffer(pins.createBuffer(1).fill(requestCommand))
-    }
-
-    // ==================== LESS FREQUENTLY USED FUNCTIONS ====================
-
-    /**
      * Get foot type (Left/Right)
      */
     //% blockId=pressure_sensor_get_foot_type
@@ -282,21 +376,11 @@ namespace PressureSensorLib {
     }
 
     /**
-     * Get current foot type as number (1=Left, 2=Right, 255=Unknown)
-     */
-    //% blockId=pressure_sensor_get_foot_type_number
-    //% block="Get foot type as number"
-    //% weight=45
-    export function getFootTypeNumber(): number {
-        return currentFootType;
-    }
-
-    /**
      * Get current timestamp
      */
     //% blockId=pressure_sensor_get_timestamp
     //% block="Get timestamp"
-    //% weight=40
+    //% weight=45
     export function getTimestamp(): number {
         return currentTimestamp;
     }
@@ -308,7 +392,7 @@ namespace PressureSensorLib {
     //% blockId=pressure_sensor_set_debug
     //% block="Set debug mode %debug"
     //% debug.defl=false
-    //% weight=35
+    //% weight=40
     export function setDebugMode(debug: boolean): void {
         debugMode = debug;
         if (debug) {
@@ -321,7 +405,7 @@ namespace PressureSensorLib {
      */
     //% blockId=pressure_sensor_on_checksum_error
     //% block="On checksum error"
-    //% weight=30
+    //% weight=35
     export function onChecksumError(handler: () => void) {
         control.onEvent(EVENT_CHECKSUM_ERROR, 0, handler);
     }
@@ -331,7 +415,7 @@ namespace PressureSensorLib {
      */
     //% blockId=pressure_sensor_test
     //% block="Test sensor connection"
-    //% weight=25
+    //% weight=30
     export function testConnection(): void {
         if (!isInitialized) {
             serial.writeLine("Please initialize the sensor first!");
@@ -577,6 +661,12 @@ namespace PressureSensorLib {
                 lowByte + "=" +
                 value);
         }
+
+        // Print CoP information
+        const cop = getCenterOfPressure();
+        serial.writeLine("Center of Pressure: (" + 
+            Math.round(cop[0] * 100) / 100 + ", " + 
+            Math.round(cop[1] * 100) / 100 + ")");
 
         serial.writeLine("Timestamp: " + currentTimestamp + " ms");
         serial.writeLine("------------------------------");
