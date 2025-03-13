@@ -206,11 +206,60 @@ namespace PressureSensorLib {
     }
 
     /**
+     * Get the total pressure value at the Center of Pressure
+     * Returns the sum of all pressure points
+     */
+    //% blockId=pressure_sensor_get_cop_pressure
+    //% block="Get total pressure at Center of Pressure"
+    //% weight=95
+    export function getCenterOfPressureTotalPressure(): number {
+        let totalPressure = 0;
+        
+        // Sum all pressure points
+        for (let i = 0; i < 18; i++) {
+            totalPressure += pointValues[i];
+        }
+        
+        return totalPressure;
+    }
+
+    /**
+     * Get the Center of Pressure with pressure information
+     * Returns [x, y, pressure] where:
+     * - x ranges from 0 (left) to 1 (right)
+     * - y ranges from 0 (heel) to 1 (toe)
+     * - pressure is the total pressure value
+     */
+    //% blockId=pressure_sensor_get_cop_with_pressure
+    //% block="Get Center of Pressure with pressure"
+    //% weight=94
+    export function getCenterOfPressureWithPressure(): number[] {
+        const cop = getCenterOfPressure();
+        const pressure = getCenterOfPressureTotalPressure();
+        
+        return [cop[0], cop[1], pressure];
+    }
+
+    /**
+     * Get the CoP coordinates and pressure as a formatted string
+     */
+    //% blockId=pressure_sensor_get_cop_pressure_string
+    //% block="Get Center of Pressure with pressure as string"
+    //% weight=93
+    export function getCenterOfPressureWithPressureString(): string {
+        const cop = getCenterOfPressure();
+        const pressure = getCenterOfPressureTotalPressure();
+        
+        // Format to 2 decimal places
+        return `CoP: (${Math.round(cop[0] * 100) / 100}, ${Math.round(cop[1] * 100) / 100}) Pressure: ${pressure}`;
+    }
+
+    /**
      * Get the CoP coordinates as a formatted string
      */
     //% blockId=pressure_sensor_get_cop_string
     //% block="Get Center of Pressure as string"
-    //% weight=94
+    //% weight=92
     export function getCenterOfPressureString(): string {
         const cop = getCenterOfPressure();
         // Format to 2 decimal places
@@ -222,7 +271,7 @@ namespace PressureSensorLib {
      */
     //% blockId=pressure_sensor_is_data_updated
     //% block="Is data updated"
-    //% weight=93
+    //% weight=91
     export function isDataUpdated(): boolean {
         if (dataUpdated) {
             dataUpdated = false;  // Reset flag after checking
@@ -236,7 +285,7 @@ namespace PressureSensorLib {
      */
     //% blockId=pressure_sensor_is_left_foot
     //% block="Is left foot data"
-    //% weight=92
+    //% weight=90
     export function isLeftFoot(): boolean {
         return currentFootType === FootType.Left;
     }
@@ -246,7 +295,7 @@ namespace PressureSensorLib {
      */
     //% blockId=pressure_sensor_is_right_foot
     //% block="Is right foot data"
-    //% weight=91
+    //% weight=89
     export function isRightFoot(): boolean {
         return currentFootType === FootType.Right;
     }
@@ -256,7 +305,7 @@ namespace PressureSensorLib {
      */
     //% blockId=pressure_sensor_get_foot_type_number
     //% block="Get foot type as number"
-    //% weight=90
+    //% weight=88
     export function getFootTypeNumber(): number {
         return currentFootType;
     }
@@ -266,7 +315,7 @@ namespace PressureSensorLib {
      */
     //% blockId=pressure_sensor_request_data
     //% block="Request new data"
-    //% weight=89
+    //% weight=87
     export function requestData(): void {
         if (debugMode) {
             serial.writeLine("Requesting new data...");
@@ -664,9 +713,11 @@ namespace PressureSensorLib {
 
         // Print CoP information
         const cop = getCenterOfPressure();
+        const pressure = getCenterOfPressureTotalPressure();
         serial.writeLine("Center of Pressure: (" + 
             Math.round(cop[0] * 100) / 100 + ", " + 
-            Math.round(cop[1] * 100) / 100 + ")");
+            Math.round(cop[1] * 100) / 100 + ") Total Pressure: " + 
+            pressure);
 
         serial.writeLine("Timestamp: " + currentTimestamp + " ms");
         serial.writeLine("------------------------------");
