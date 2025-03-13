@@ -59,6 +59,18 @@ namespace PressureSensorLib {
         RightSide = 5
     }
 
+    // Output format for getCenterOfPressure
+    export enum CoPFormat {
+        //% block="Coordinates Only"
+        Coordinates = 0,
+        //% block="With Pressure"
+        WithPressure = 1,
+        //% block="As String"
+        AsString = 2,
+        //% block="With Pressure As String"
+        WithPressureAsString = 3
+    }
+
     // Event handling
     export const EVENT_DATA_RECEIVED = 1;
     export const EVENT_CHECKSUM_ERROR = 2;
@@ -141,19 +153,17 @@ namespace PressureSensorLib {
     }
 
     /**
-     * Calculate the Center of Pressure (CoP) for the current foot
-     * Returns [x, y] coordinates where:
-     * - x ranges from 0 (left) to 1 (right)
-     * - y ranges from 0 (heel) to 1 (toe)
+     * Get Center of Pressure (CoP) data in the requested format
+     * @param format The format to return the CoP data in
+     * @returns CoP data in the requested format (coordinates, with pressure, or as string)
      */
     //% blockId=pressure_sensor_get_cop
-    //% block="Get Center of Pressure coordinates"
+    //% block="Get Center of Pressure %format"
+    //% format.defl=CoPFormat.Coordinates
     //% weight=95
-    export function getCenterOfPressure(): number[] {
-        // Define the coordinates for each pressure point (normalized from 0 to 1)
-        // These are approximate positions based on the foot shape image
+    export function getCenterOfPressure(format: CoPFormat = CoPFormat.Coordinates): any {
+        // Calculate the CoP coordinates
         const pointCoordinates = [
-            // Point 1: [x, y]
             [0.2, 0.8],  // Point 1
             [0.1, 0.9],  // Point 2
             [0.1, 0.3],  // Point 3
@@ -195,75 +205,40 @@ namespace PressureSensorLib {
 
         // Avoid division by zero
         if (totalPressure === 0) {
-            return [0.5, 0.5]; // Return center if no pressure detected
+            // Return appropriate format with default values
+            switch (format) {
+                case CoPFormat.Coordinates:
+                    return [0.5, 0.5];
+                case CoPFormat.WithPressure:
+                    return [0.5, 0.5, 0];
+                case CoPFormat.AsString:
+                    return "CoP: (0.50, 0.50)";
+                case CoPFormat.WithPressureAsString:
+                    return "CoP: (0.50, 0.50) Pressure: 0";
+            }
         }
 
         // Calculate center of pressure
         const copX = weightedSumX / totalPressure;
         const copY = weightedSumY / totalPressure;
-
-        return [copX, copY];
-    }
-
-    /**
-     * Get the total pressure value at the Center of Pressure
-     * Returns the sum of all pressure points
-     */
-    //% blockId=pressure_sensor_get_cop_pressure
-    //% block="Get total pressure at Center of Pressure"
-    //% weight=95
-    export function getCenterOfPressureTotalPressure(): number {
-        let totalPressure = 0;
         
-        // Sum all pressure points
-        for (let i = 0; i < 18; i++) {
-            totalPressure += pointValues[i];
+        // Format to 2 decimal places for display
+        const formattedX = Math.round(copX * 100) / 100;
+        const formattedY = Math.round(copY * 100) / 100;
+
+        // Return the appropriate format
+        switch (format) {
+            case CoPFormat.Coordinates:
+                return [copX, copY];
+            case CoPFormat.WithPressure:
+                return [copX, copY, totalPressure];
+            case CoPFormat.AsString:
+                return `CoP: (${formattedX}, ${formattedY})`;
+            case CoPFormat.WithPressureAsString:
+                return `CoP: (${formattedX}, ${formattedY}) Pressure: ${totalPressure}`;
+            default:
+                return [copX, copY];
         }
-        
-        return totalPressure;
-    }
-
-    /**
-     * Get the Center of Pressure with pressure information
-     * Returns [x, y, pressure] where:
-     * - x ranges from 0 (left) to 1 (right)
-     * - y ranges from 0 (heel) to 1 (toe)
-     * - pressure is the total pressure value
-     */
-    //% blockId=pressure_sensor_get_cop_with_pressure
-    //% block="Get Center of Pressure with pressure"
-    //% weight=94
-    export function getCenterOfPressureWithPressure(): number[] {
-        const cop = getCenterOfPressure();
-        const pressure = getCenterOfPressureTotalPressure();
-        
-        return [cop[0], cop[1], pressure];
-    }
-
-    /**
-     * Get the CoP coordinates and pressure as a formatted string
-     */
-    //% blockId=pressure_sensor_get_cop_pressure_string
-    //% block="Get Center of Pressure with pressure as string"
-    //% weight=93
-    export function getCenterOfPressureWithPressureString(): string {
-        const cop = getCenterOfPressure();
-        const pressure = getCenterOfPressureTotalPressure();
-        
-        // Format to 2 decimal places
-        return `CoP: (${Math.round(cop[0] * 100) / 100}, ${Math.round(cop[1] * 100) / 100}) Pressure: ${pressure}`;
-    }
-
-    /**
-     * Get the CoP coordinates as a formatted string
-     */
-    //% blockId=pressure_sensor_get_cop_string
-    //% block="Get Center of Pressure as string"
-    //% weight=92
-    export function getCenterOfPressureString(): string {
-        const cop = getCenterOfPressure();
-        // Format to 2 decimal places
-        return `CoP: (${Math.round(cop[0] * 100) / 100}, ${Math.round(cop[1] * 100) / 100})`;
     }
 
     /**
@@ -712,12 +687,8 @@ namespace PressureSensorLib {
         }
 
         // Print CoP information
-        const cop = getCenterOfPressure();
-        const pressure = getCenterOfPressureTotalPressure();
-        serial.writeLine("Center of Pressure: (" + 
-            Math.round(cop[0] * 100) / 100 + ", " + 
-            Math.round(cop[1] * 100) / 100 + ") Total Pressure: " + 
-            pressure);
+        const copInfo = getCenterOfPressure(CoPFormat.WithPressureAsString);
+        serial.writeLine(copInfo);
 
         serial.writeLine("Timestamp: " + currentTimestamp + " ms");
         serial.writeLine("------------------------------");
