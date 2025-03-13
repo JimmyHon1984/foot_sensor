@@ -26,12 +26,12 @@ namespace PressureSensorLib {
     export let pointValues: number[] = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
     export let dataUpdated = false;  // Flag to indicate new data is available
 
-// Foot region definitions (using 0-based index internally)
-export const TOE_REGION = [0, 6, 12, 16, 17];      // Points 1, 7, 13, 17, 18 (front-most points with y ≥ 0.8)
-export const FOREFOOT_REGION = [5, 11, 15];        // Points 6, 12, 16 (y = 0.7)
-export const MIDFOOT_REGION = [4, 10, 14];         // Points 5, 11, 15 (y = 0.5)
-export const ARCH_REGION = [2, 8];                 // Points 3, 9 (y = 0.3)
-export const HEEL_REGION = [3, 9];                 // Points 4, 10 (y = 0.2, back-most points)
+    // Foot region definitions (using 0-based index internally)
+    export const TOE_REGION = [0, 6, 12, 16, 17];      // Points 1, 7, 13, 17, 18 (front-most points with y ≥ 0.8)
+    export const FOREFOOT_REGION = [5, 11, 15];        // Points 6, 12, 16 (y = 0.7)
+    export const MIDFOOT_REGION = [4, 10, 14];         // Points 5, 11, 15 (y = 0.5)
+    export const ARCH_REGION = [2, 8];                 // Points 3, 9 (y = 0.3)
+    export const HEEL_REGION = [3, 9];                 // Points 4, 10 (y = 0.2, back-most points)
 
     // Data type definitions
     export enum FootType {
