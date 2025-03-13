@@ -65,10 +65,12 @@ namespace PressureSensorLib {
         Coordinates = 0,
         //% block="With Pressure"
         WithPressure = 1,
+        //% block="With Normalized Pressure"
+        WithNormalizedPressure = 2,
         //% block="As String"
-        AsString = 2,
+        AsString = 3,
         //% block="With Pressure As String"
-        WithPressureAsString = 3
+        WithPressureAsString = 4
     }
 
     // Event handling
@@ -194,6 +196,14 @@ namespace PressureSensorLib {
         let totalPressure = 0;
         let weightedSumX = 0;
         let weightedSumY = 0;
+        
+        // Find maximum pressure for normalization
+        let maxPressure = 0;
+        for (let i = 0; i < 18; i++) {
+            if (pointValues[i] > maxPressure) {
+                maxPressure = pointValues[i];
+            }
+        }
 
         // Calculate weighted average of coordinates based on pressure values
         for (let i = 0; i < 18; i++) {
@@ -201,6 +211,13 @@ namespace PressureSensorLib {
             totalPressure += pressure;
             weightedSumX += pressure * pointCoordinates[i][0];
             weightedSumY += pressure * pointCoordinates[i][1];
+        }
+
+        // Calculate normalized pressure (0.0 to 1.0)
+        // If no pressure or max is 0, normalized value is 0
+        let normalizedPressure = 0;
+        if (maxPressure > 0) {
+            normalizedPressure = totalPressure / (maxPressure * 18);
         }
 
         // Avoid division by zero
@@ -211,10 +228,12 @@ namespace PressureSensorLib {
                     return [0.5, 0.5];
                 case CoPFormat.WithPressure:
                     return [0.5, 0.5, 0];
+                case CoPFormat.WithNormalizedPressure:
+                    return [0.5, 0.5, 0];
                 case CoPFormat.AsString:
                     return "CoP: (0.50, 0.50)";
                 case CoPFormat.WithPressureAsString:
-                    return "CoP: (0.50, 0.50) Pressure: 0";
+                    return "CoP: (0.50, 0.50) Pressure: 0 (0%)";
             }
         }
 
@@ -225,6 +244,9 @@ namespace PressureSensorLib {
         // Format to 2 decimal places for display
         const formattedX = Math.round(copX * 100) / 100;
         const formattedY = Math.round(copY * 100) / 100;
+        
+        // Format normalized pressure as percentage with 1 decimal place
+        const pressurePercentage = Math.round(normalizedPressure * 1000) / 10;
 
         // Return the appropriate format
         switch (format) {
@@ -232,10 +254,12 @@ namespace PressureSensorLib {
                 return [copX, copY];
             case CoPFormat.WithPressure:
                 return [copX, copY, totalPressure];
+            case CoPFormat.WithNormalizedPressure:
+                return [copX, copY, normalizedPressure];
             case CoPFormat.AsString:
                 return `CoP: (${formattedX}, ${formattedY})`;
             case CoPFormat.WithPressureAsString:
-                return `CoP: (${formattedX}, ${formattedY}) Pressure: ${totalPressure}`;
+                return `CoP: (${formattedX}, ${formattedY}) Pressure: ${totalPressure} (${pressurePercentage}%)`;
             default:
                 return [copX, copY];
         }
@@ -326,6 +350,60 @@ namespace PressureSensorLib {
         return result;
     }
 
+    /**
+     * Get normalized pressure values for all points (0-100%)
+     * @param group Select which group of points to display
+     */
+    //% blockId=pressure_sensor_get_normalized_points
+    //% block="Show normalized pressure points %group"
+    //% group.defl=PointGroup.All
+    //% weight=84
+    export function getNormalizedPoints(group: PointGroup = PointGroup.All): string {
+        const range = getPointRange(group);
+        let result = "Normalized Points: \n";
+        
+        // Find maximum value for normalization
+        let maxValue = 0;
+        for (let i = 0; i < 18; i++) {
+            if (pointValues[i] > maxValue) {
+                maxValue = pointValues[i];
+            }
+        }
+        
+        // If no pressure detected, return zeros
+        if (maxValue === 0) {
+            for (let i = range.start; i <= range.end; i += range.step) {
+                result += "P" + (i + 1) + ": 0%";
+                if (i < range.end) {
+                    if ((i - range.start + 1) % 3 === 0) {
+                        result += "\n";
+                    } else {
+                        result += " | ";
+                    }
+                }
+            }
+            return result;
+        }
+        
+        // Create normalized output
+        for (let i = range.start; i <= range.end; i += range.step) {
+            // Calculate percentage with 1 decimal place
+            const percentage = Math.round((pointValues[i] / maxValue) * 1000) / 10;
+            result += "P" + (i + 1) + ": " + percentage + "%";
+            
+            if (i < range.end) {
+                // Add a new line every 3 points for better readability
+                if ((i - range.start + 1) % 3 === 0) {
+                    result += "\n";
+                } else {
+                    result += " | ";
+                }
+            }
+        }
+        
+        return result;
+    }
+
     // ==================== LESS FREQUENTLY USED FUNCTIONS ====================
 
     /**
@@ -348,13 +426,49 @@ namespace PressureSensorLib {
     }
 
     /**
+     * Get the normalized sum of pressure points (0.0 to 1.0)
+     * @param group Select which group of points to sum
+     */
+    //% blockId=pressure_sensor_get_normalized_sum
+    //% block="Normalized sum of pressure points %group"
+    //% group.defl=PointGroup.All
+    //% weight=59
+    export function getNormalizedSum(group: PointGroup = PointGroup.All): number {
+        const range = getPointRange(group);
+        let sum = 0;
+        let count = 0;
+        
+        // Find max pressure value
+        let maxValue = 0;
+        for (let i = 0; i < 18; i++) {
+            if (pointValues[i] > maxValue) {
+                maxValue = pointValues[i];
+            }
+        }
+        
+        // If no pressure, return 0
+        if (maxValue === 0) {
+            return 0;
+        }
+        
+        // Calculate sum of selected points
+        for (let i = range.start; i <= range.end; i += range.step) {
+            sum += pointValues[i];
+            count++;
+        }
+        
+        // Normalize by max possible value (max * number of points)
+        return sum / (maxValue * count);
+    }
+
+    /**
      * Get the average of all pressure points
      * @param group Select which group of points to average
      */
     //% blockId=pressure_sensor_get_points_average
     //% block="Average of pressure points %group"
     //% group.defl=PointGroup.All
-    //% weight=59
+    //% weight=58
     export function getPointsAverage(group: PointGroup = PointGroup.All): number {
         const range = getPointRange(group);
         let sum = 0;
@@ -375,7 +489,7 @@ namespace PressureSensorLib {
     //% blockId=pressure_sensor_get_points_max
     //% block="Maximum pressure in %group"
     //% group.defl=PointGroup.All
-    //% weight=58
+    //% weight=57
     export function getPointsMax(group: PointGroup = PointGroup.All): number {
         const range = getPointRange(group);
         let max = 0;
