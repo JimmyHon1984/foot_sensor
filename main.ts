@@ -249,7 +249,7 @@ namespace PressureSensorLib {
                 return [scaledX, scaledY];
             case CoPFormat.WithPressure:
                 // Use normalized pressure scaled to 0-100 range
-                return [scaledX, scaledY, normalizedPressure * 100];
+                return [scaledX, scaledY, Math.round(normalizedPressure * 100)];
             case CoPFormat.WithNormalizedPressure:
                 return [scaledX, scaledY, normalizedPressure];
             default:
