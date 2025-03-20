@@ -240,7 +240,7 @@ namespace PressureSensorLib {
         // Convert 0-1 range to -10 to 10 range
         // For X: 0->-10, 0.5->0, 1->10
         // For Y: 0->-10, 0.5->0, 1->10
-        const scaledX = Math.round((copX - 0.5) * 20);
+        const scaledX = Math.round((copX - 0.5) * 40);
         const scaledY = Math.round((copY - 0.5) * 20);
         
         // Return the appropriate format
