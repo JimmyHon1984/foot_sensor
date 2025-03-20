@@ -230,10 +230,6 @@ namespace PressureSensorLib {
                     return [0, 0, 0]; // Center point with zero pressure
                 case CoPFormat.WithNormalizedPressure:
                     return [0, 0, 0]; // Center point with zero normalized pressure
-                case CoPFormat.AsString:
-                    return "CoP: (0.00, 0.00)";
-                case CoPFormat.WithPressureAsString:
-                    return "CoP: (0.00, 0.00) Pressure: 0%";
             }
         }
 
@@ -247,26 +243,15 @@ namespace PressureSensorLib {
         const scaledX = (copX - 0.5) * 20;
         const scaledY = (copY - 0.5) * 20;
         
-        // Format to 2 decimal places for display
-        const formattedX = Math.round(scaledX * 100) / 100;
-        const formattedY = Math.round(scaledY * 100) / 100;
-        
-        // Format normalized pressure as percentage with 1 decimal place
-        const pressurePercentage = Math.round(normalizedPressure * 1000) / 10;
-
         // Return the appropriate format
         switch (format) {
             case CoPFormat.Coordinates:
                 return [scaledX, scaledY];
             case CoPFormat.WithPressure:
                 // Use normalized pressure scaled to 0-100 range
-                return [scaledX, scaledY, Math.round(normalizedPressure * 100)];
+                return [scaledX, scaledY, normalizedPressure * 100];
             case CoPFormat.WithNormalizedPressure:
                 return [scaledX, scaledY, normalizedPressure];
-            case CoPFormat.AsString:
-                return `CoP: (${formattedX}, ${formattedY})`;
-            case CoPFormat.WithPressureAsString:
-                return `CoP: (${formattedX}, ${formattedY}) Pressure: ${pressurePercentage}%`;
             default:
                 return [scaledX, scaledY];
         }
